@@ -1,27 +1,44 @@
 use core::str::FromStr;
-use nix::sys::ptrace;
-use nix::sys::ptrace::*;
-use nix::sys::signal::Signal;
-use nix::sys::wait::{waitpid, WaitStatus};
+use nix::sys::{
+    ptrace,
+    ptrace::*,
+    signal::Signal,
+    wait::{waitpid, WaitStatus},
+};
 use nix::unistd::Pid;
 use std::sync::{Arc, Mutex};
 
-use crate::types::Result;
+use crate::types::{ListenStatus, Result};
+use crate::traits::Listen;
 
-struct Listener {
+struct SignalListener {
     pid: Pid,
     signal: Signal,
 }
 
-impl Listener {
+impl SignalListener {
     pub fn new(pid: i32, signal: &str) -> Result<Self> {
         let pid = Pid::from_raw(pid);
         let signal = Signal::from_str(signal)?;
 
-        Ok(Listener { pid, signal })
+        Ok(SignalListener { pid, signal })
     }
 
-    pub fn listen(&self) -> Result<SignalStatus> {
+   
+    fn attach_to_process(&self) -> Result<()> {
+        ptrace::attach(self.pid)?;
+        println!("Attached to {}", self.pid);
+        waitpid(self.pid, None)?;
+        ptrace::setoptions(
+            self.pid,
+            Options::PTRACE_O_TRACESYSGOOD | Options::PTRACE_O_TRACEEXEC,
+        )?;
+        Ok(())
+    }
+}
+
+impl Listen for SignalListener {
+    fn listen(&self) -> Result<ListenStatus> {
         println!("Listening for signal: {} on pid: {}", self.signal, self.pid);
         self.attach_to_process()?;
 
@@ -37,19 +54,9 @@ impl Listener {
             }
         }
         println!("Signal found!: {:?}", self.signal);
-        Ok(SignalStatus::Found)
+        Ok(ListenStatus::Found)
     }
 
-    fn attach_to_process(&self) -> Result<()> {
-        ptrace::attach(self.pid)?;
-        println!("Attached to {}", self.pid);
-        waitpid(self.pid, None)?;
-        ptrace::setoptions(
-            self.pid,
-            Options::PTRACE_O_TRACESYSGOOD | Options::PTRACE_O_TRACEEXEC,
-        )?;
-        Ok(())
-    }
 }
 
 fn parse_status(status: WaitStatus) -> Option<Signal> {
@@ -60,13 +67,6 @@ fn parse_status(status: WaitStatus) -> Option<Signal> {
         _ => None,
     }
 }
-
-#[derive(Debug, PartialEq)]
-pub enum SignalStatus {
-    Found,
-    NotFound
-}
-
 
 #[cfg(test)]
 mod tests {
@@ -101,29 +101,25 @@ mod tests {
         use nix::sys::signal;
 
         let mut child = std::process::Command::new("sleep")
-        .arg("60")
-        .spawn()
-        .unwrap();
-        std::thread::spawn(move || {
-            
-        });
+            .arg("60")
+            .spawn()
+            .unwrap();
+        std::thread::spawn(move || {});
         let pid = Pid::from_raw(child.id() as i32);
 
-        let listener = Listener::new(child.id() as i32, "SIGHUP").unwrap();
-        let status = Arc::new(Mutex::new(SignalStatus::NotFound));
+        let listener = SignalListener::new(child.id() as i32, "SIGHUP").unwrap();
+        let status = Arc::new(Mutex::new(ListenStatus::NotFound));
         let t_status = Arc::clone(&status);
 
         let handle = std::thread::spawn(move || {
             let mut s = t_status.lock().unwrap();
             *s = listener.listen().unwrap();
         });
-        
         std::thread::sleep(std::time::Duration::from_secs(1));
         signal::kill(pid, Signal::SIGHUP).unwrap();
-        
         handle.join().unwrap();
         child.kill().unwrap();
 
-        assert_eq!(*status.lock().unwrap(), SignalStatus::Found);
+        assert_eq!(*status.lock().unwrap(), ListenStatus::Found);
     }
 }
