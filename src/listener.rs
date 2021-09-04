@@ -11,17 +11,15 @@ use std::sync::{Arc, Mutex};
 use crate::types::{ListenStatus, Result};
 use crate::traits::Listen;
 
-struct SignalListener {
+pub struct SignalListener {
     pid: Pid,
     signal: Signal,
 }
 
 impl SignalListener {
-    pub fn new(pid: i32, signal: &str) -> Result<Self> {
+    pub fn new(pid: i32, signal: Signal) -> Self {
         let pid = Pid::from_raw(pid);
-        let signal = Signal::from_str(signal)?;
-
-        Ok(SignalListener { pid, signal })
+        SignalListener { pid, signal }
     }
 
    
@@ -71,6 +69,7 @@ fn parse_status(status: WaitStatus) -> Option<Signal> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
     fn test_parse_status_some() {
@@ -97,6 +96,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_listen_to_pid() {
         use nix::sys::signal;
 
@@ -107,7 +107,7 @@ mod tests {
         std::thread::spawn(move || {});
         let pid = Pid::from_raw(child.id() as i32);
 
-        let listener = SignalListener::new(child.id() as i32, "SIGHUP").unwrap();
+        let listener = SignalListener::new(child.id() as i32, Signal::SIGHUP);
         let status = Arc::new(Mutex::new(ListenStatus::NotFound));
         let t_status = Arc::clone(&status);
 
