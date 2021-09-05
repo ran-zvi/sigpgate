@@ -8,24 +8,15 @@ use nix::sys::signal::Signal;
 pub struct Opts {
     #[clap(short, long)]
     pub pid: u32,
-    
+
     #[clap(short, long)]
     pub verbose: bool,
     
-    #[clap(subcommand)]
-    pub mode: Subcommand
-
-}
-
-#[derive(Clap)]
-pub enum Subcommand {
-    Propagate(Propagate)
-}
-
-#[derive(Clap)]
-pub struct Propagate {
     #[clap(short, long, default_value="SIGTERM")]
-    pub signal: Signal,
+    pub listen_signal: Signal,
+
+    #[clap(short, long)]
+    pub send_signal: Option<Signal>,
 
     #[clap(short, long, default_value="0")]
     pub depth: u8,

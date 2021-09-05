@@ -58,6 +58,15 @@ pub fn get_child_pids_full_tree<'a>(
     return Ok(process_level_map.clone());
 }
 
+pub fn get_child_pids_at_depth(pid: i32, depth: u8) -> Result<Option<ChildPids>> {
+    let child_pids_by_depth: HashMap<_, _> = get_child_pids_full_tree(pid, None, None)?;
+    let child_pids_at_depth = child_pids_by_depth.get(&(depth as usize));
+    match child_pids_at_depth {
+        Some(pids) => Ok(Some(pids.to_vec())),
+        None => Ok(None),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
