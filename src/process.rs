@@ -1,15 +1,9 @@
 use crate::types::{ChildPids, Result};
-use nix::{
-    sys::wait::waitpid,
-    unistd::{fork, getpid, ForkResult},
-};
+
 use std::{
     collections::HashMap,
     process::Command,
     str::FromStr,
-    sync::{Arc, Mutex},
-    thread::{sleep, spawn},
-    time::Duration,
 };
 
 pub fn get_child_pids(pid: i32) -> Result<Vec<i32>> {
@@ -71,6 +65,14 @@ pub fn get_child_pids_at_depth(pid: i32, depth: u8) -> Result<Option<ChildPids>>
 mod tests {
     use super::*;
     use serial_test::serial;
+    use nix::{
+        unistd::getpid,
+    };
+    use std::{
+        sync::{Arc, Mutex},
+        thread::spawn,
+    };
+
     #[test]
     #[serial]
     fn test_get_child_pids_once() {
@@ -129,7 +131,7 @@ mod tests {
         let depths: Vec<&usize> = child_pids.keys().collect();
         let processes_num = child_pids.values().collect::<Vec<_>>();
         
-        assert_eq!(depths, vec![&0]);
+        assert_eq!(depths, vec![&1]);
         assert_eq!(processes_num.first().unwrap().len(), 5);
     }
 }

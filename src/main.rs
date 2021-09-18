@@ -27,10 +27,10 @@ fn main() {
             let signal_map = SignalMap::new(listen_signal, send_signal);
             if keep_alive {
                 loop {
-                    match propagate_signal_to_all_child_pids(opts.pid as i32, depth, signal_map) {
+                    match propagate_signal_to_all_child_pids(pid as i32, depth, signal_map) {
                         Ok(_) => (),
                         Err(_) => {
-                            if opts.verbose {
+                            if verbose {
                                 println!(
                                     "Pid at level {} of parent: {} not yet found, sleeping...",
                                     depth, opts.pid
@@ -41,7 +41,7 @@ fn main() {
                     std::thread::sleep(std::time::Duration::from_secs(1));
                 }
             } else {
-                propagate_signal_to_all_child_pids(opts.pid as i32, depth, signal_map).unwrap();
+                propagate_signal_to_all_child_pids(pid as i32, depth, signal_map).unwrap();
             }
         }
     }

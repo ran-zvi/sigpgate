@@ -5,7 +5,7 @@ use crate::traits::Listen;
 use crate::errors::ProcessError;
 
 
-use nix::sys::signal::{kill, Signal};
+use nix::sys::signal::kill;
 use nix::unistd::Pid;
 
 

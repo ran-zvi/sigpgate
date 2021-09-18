@@ -34,3 +34,7 @@ Assume the following process tree:
 
 `sigpgate 1 -d 1` will listen to `SIGTERM` signal on pids: `2`, `4`. When it's found it will send a SIGTERM to pids: `3`, `5`
 
+
+
+## Tests
+In order to run tests, execute `make`

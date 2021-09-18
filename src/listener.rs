@@ -1,4 +1,3 @@
-use core::str::FromStr;
 use nix::sys::{
     ptrace,
     ptrace::*,
@@ -6,7 +5,6 @@ use nix::sys::{
     wait::{waitpid, WaitStatus},
 };
 use nix::unistd::Pid;
-use std::sync::{Arc, Mutex};
 
 use crate::types::{ListenStatus, Result};
 use crate::traits::Listen;
@@ -70,6 +68,7 @@ fn parse_status(status: WaitStatus) -> Option<Signal> {
 mod tests {
     use super::*;
     use serial_test::serial;
+    use std::sync::{Arc, Mutex};
 
     #[test]
     fn test_parse_status_some() {
