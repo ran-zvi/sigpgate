@@ -6,7 +6,7 @@ use std::{
     str::FromStr,
 };
 
-pub fn get_child_pids(pid: i32) -> Result<Vec<i32>> {
+pub fn get_child_pids(pid: u32) -> Result<Vec<u32>> {
     let output = Command::new("pgrep")
         .arg("-P")
         .arg(format!("{}", pid))
@@ -15,14 +15,14 @@ pub fn get_child_pids(pid: i32) -> Result<Vec<i32>> {
     match output {
         Ok(o) => Ok(String::from_utf8(o.stdout)?
             .lines()
-            .map(|s| i32::from_str(s).unwrap())
-            .collect::<Vec<i32>>()),
+            .map(|s| u32::from_str(s).unwrap())
+            .collect::<Vec<u32>>()),
         Err(e) => Err(e.into()),
     }
 }
 
 pub fn get_child_pids_full_tree<'a>(
-    pid: i32,
+    pid: u32,
     process_level_map: Option<&'a mut HashMap<usize, ChildPids>>,
     current_depth: Option<usize>
 ) -> Result<HashMap<usize, ChildPids>> {
@@ -52,7 +52,7 @@ pub fn get_child_pids_full_tree<'a>(
     return Ok(process_level_map.clone());
 }
 
-pub fn get_child_pids_at_depth(pid: i32, depth: u8) -> Result<Option<ChildPids>> {
+pub fn get_child_pids_at_depth(pid: u32, depth: u8) -> Result<Option<ChildPids>> {
     let child_pids_by_depth: HashMap<_, _> = get_child_pids_full_tree(pid, None, None)?;
     let child_pids_at_depth = child_pids_by_depth.get(&(depth as usize));
     match child_pids_at_depth {
@@ -95,7 +95,8 @@ mod tests {
             handles.push(handle);
         }
 
-        let child_pids = get_child_pids(pid.into()).unwrap().sort();
+        let pid: i32 = pid.into();
+        let child_pids = get_child_pids(pid as u32).unwrap().sort();
 
         for handle in handles {
             handle.join().unwrap();
@@ -122,7 +123,8 @@ mod tests {
             handles.push(handle);
         }
 
-        let child_pids = get_child_pids_full_tree(pid.into(), None, None).unwrap();
+        let pid: i32 = pid.into();
+        let child_pids = get_child_pids_full_tree(pid as u32, None, None).unwrap();
 
         for handle in handles {
             handle.join().unwrap();

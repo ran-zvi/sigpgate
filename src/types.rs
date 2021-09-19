@@ -1,7 +1,7 @@
 use nix::sys::signal::Signal;
 
 pub type Result<T> = anyhow::Result<T>;
-pub type ChildPids = Vec<i32>;
+pub type ChildPids = Vec<u32>;
 
 #[derive(Debug, PartialEq)]
 pub enum ListenStatus {

@@ -15,8 +15,8 @@ pub struct SignalListener {
 }
 
 impl SignalListener {
-    pub fn new(pid: i32, signal: Signal) -> Self {
-        let pid = Pid::from_raw(pid);
+    pub fn new(pid: u32, signal: Signal) -> Self {
+        let pid = Pid::from_raw(pid as i32);
         SignalListener { pid, signal }
     }
 
@@ -106,7 +106,7 @@ mod tests {
         std::thread::spawn(move || {});
         let pid = Pid::from_raw(child.id() as i32);
 
-        let listener = SignalListener::new(child.id() as i32, Signal::SIGHUP);
+        let listener = SignalListener::new(child.id(), Signal::SIGHUP);
         let status = Arc::new(Mutex::new(ListenStatus::NotFound));
         let t_status = Arc::clone(&status);
 
