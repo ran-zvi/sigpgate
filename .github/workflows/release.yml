@@ -15,5 +15,5 @@ jobs:
       run: cargo build --verbose --release
     - uses: actions/upload-artifact@v2
       with:
-        name: sigpgate-${{ env.GITHUB_REF }}
+        name: sigpgate
         path: target/release/sigpgate
