@@ -19,6 +19,4 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run serial tests
-      run: cargo test -- -q --skip full_tree
-    - name: Run flaky tests
-      run: cargo test -- -q full_tree
+      run: make test_serial
