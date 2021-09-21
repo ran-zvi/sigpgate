@@ -52,9 +52,10 @@ fn get_target_pids(pid: u32, depth: u8) -> Result<ChildPids> {
         return Ok(vec![pid]);
     }
 
-    if let Some(children) = get_child_pids_at_depth(pid, depth)? {
-        return Ok(children);
-    } else {
-        return Err(ProcessError::NoChildProcesses.into());
+    loop {
+        match get_child_pids_at_depth(pid, depth) {
+            Ok(Some(children)) => return Ok(children),
+            _ => continue
+        }
     }
 }
