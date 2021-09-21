@@ -115,7 +115,7 @@ mod tests {
         for _ in 0..5 {
             let handle = spawn(move || {
                 let mut child = Command::new("sleep")
-                .arg("0.1")
+                .arg("1")
                 .spawn()
                 .unwrap();
                 child.wait().unwrap();
