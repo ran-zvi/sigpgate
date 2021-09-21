@@ -2,7 +2,6 @@ use crate::process::{get_child_pids_at_depth, get_child_pids_full_tree};
 use crate::listener::SignalListener;
 use crate::types::{Result, ChildPids, SignalMap};
 use crate::traits::Listen;
-use crate::errors::ProcessError;
 
 
 use nix::sys::signal::kill;

@@ -5,8 +5,7 @@ pub type ChildPids = Vec<u32>;
 
 #[derive(Debug, PartialEq)]
 pub enum ListenStatus {
-    Found,
-    NotFound
+    Found
 }
 
 #[derive(Clone, Copy)]

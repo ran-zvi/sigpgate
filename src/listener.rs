@@ -107,18 +107,18 @@ mod tests {
         let pid = Pid::from_raw(child.id() as i32);
 
         let listener = SignalListener::new(child.id(), Signal::SIGHUP);
-        let status = Arc::new(Mutex::new(ListenStatus::NotFound));
+        let status = Arc::new(Mutex::new(None));
         let t_status = Arc::clone(&status);
 
         let handle = std::thread::spawn(move || {
             let mut s = t_status.lock().unwrap();
-            *s = listener.listen().unwrap();
+            *s = Some(listener.listen().unwrap());
         });
         std::thread::sleep(std::time::Duration::from_secs(1));
         signal::kill(pid, Signal::SIGHUP).unwrap();
         handle.join().unwrap();
         child.kill().unwrap();
 
-        assert_eq!(*status.lock().unwrap(), ListenStatus::Found);
+        assert_eq!(*status.lock().unwrap(), Some(ListenStatus::Found));
     }
 }
