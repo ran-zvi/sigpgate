@@ -53,7 +53,7 @@ fn get_target_pids(pid: u32, depth: u8) -> Result<ChildPids> {
 
     loop {
         match get_child_pids_at_depth(pid, depth) {
-            Ok(Some(children)) => return Ok(children),
+            Ok(Some(children)) if children.len() > 0 => return Ok(children),
             _ => continue
         }
     }
