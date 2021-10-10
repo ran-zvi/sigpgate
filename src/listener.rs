@@ -1,7 +1,7 @@
 use nix::sys::{
     ptrace,
     ptrace::*,
-    signal::Signal,
+    signal::{Signal, kill},
     wait::{waitpid, WaitStatus},
 };
 use nix::unistd::Pid;
@@ -31,11 +31,28 @@ impl SignalListener {
         )?;
         Ok(())
     }
+
+    fn wait_until_process_starts(&self, max_wait_time: u64) -> Result<()> {
+        let mut time_elapsed = 0;
+        loop {
+            match kill(self.pid, None) {
+                Ok(_) => return Ok(()),
+                Err(e) => {
+                    time_elapsed += max_wait_time;
+                    if time_elapsed >= max_wait_time {
+                        return Err(e.into());
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(max_wait_time));
+                }
+            }
+        }
+    }
 }
 
 impl Listen for SignalListener {
     fn listen(&self) -> Result<ListenStatus> {
         println!("Listening for signal: {} on pid: {}", self.signal, self.pid);
+        self.wait_until_process_starts(1000)?;
         self.attach_to_process()?;
 
         loop {
@@ -120,5 +137,13 @@ mod tests {
         child.kill().unwrap();
 
         assert_eq!(*status.lock().unwrap(), Some(ListenStatus::Found));
+    }
+
+    #[test]
+    #[should_panic(expected = "ESRCH: No such process")]
+    fn test_pid_not_exist() {
+        let pid = 99999999;
+        let listener = SignalListener::new(pid, Signal::SIGHUP);
+        listener.listen().unwrap();
     }
 }
