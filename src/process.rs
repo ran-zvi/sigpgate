@@ -36,8 +36,10 @@ pub fn get_child_pids_full_tree<'a>(
         None => 1
     };
     
-
-    let child_pids = get_child_pids(pid)?;
+    let child_pids = match get_child_pids(pid) {
+        Ok(child_pids) => child_pids,
+        Err(_) => Vec::new()
+    };
 
     if child_pids.len() == 0 {
         return Ok(process_level_map.clone());
