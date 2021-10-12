@@ -9,15 +9,18 @@ use nix::unistd::Pid;
 use crate::types::{ListenStatus, Result};
 use crate::traits::Listen;
 
+const WAIT_INTERVAL_MS: u64 = 100;
+
 pub struct SignalListener {
     pid: Pid,
     signal: Signal,
+    max_wait_time: u64
 }
 
 impl SignalListener {
-    pub fn new(pid: u32, signal: Signal) -> Self {
+    pub fn new(pid: u32, signal: Signal, max_wait_time: u64) -> Self {
         let pid = Pid::from_raw(pid as i32);
-        SignalListener { pid, signal }
+        SignalListener { pid, signal, max_wait_time }
     }
 
    
@@ -32,17 +35,17 @@ impl SignalListener {
         Ok(())
     }
 
-    fn wait_until_process_starts(&self, max_wait_time: u64) -> Result<()> {
+    fn wait_until_process_starts(&self) -> Result<()> {
         let mut time_elapsed = 0;
         loop {
             match kill(self.pid, None) {
                 Ok(_) => return Ok(()),
                 Err(e) => {
-                    time_elapsed += max_wait_time;
-                    if time_elapsed >= max_wait_time {
+                    time_elapsed += WAIT_INTERVAL_MS;
+                    if time_elapsed >= self.max_wait_time {
                         return Err(e.into());
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(max_wait_time));
+                    std::thread::sleep(std::time::Duration::from_millis(WAIT_INTERVAL_MS));
                 }
             }
         }
@@ -52,7 +55,7 @@ impl SignalListener {
 impl Listen for SignalListener {
     fn listen(&self) -> Result<ListenStatus> {
         println!("Listening for signal: {} on pid: {}", self.signal, self.pid);
-        self.wait_until_process_starts(1000)?;
+        self.wait_until_process_starts()?;
         self.attach_to_process()?;
 
         loop {
@@ -123,7 +126,7 @@ mod tests {
         std::thread::spawn(move || {});
         let pid = Pid::from_raw(child.id() as i32);
 
-        let listener = SignalListener::new(child.id(), Signal::SIGHUP);
+        let listener = SignalListener::new(child.id(), Signal::SIGHUP, 1000);
         let status = Arc::new(Mutex::new(None));
         let t_status = Arc::clone(&status);
 
@@ -143,7 +146,7 @@ mod tests {
     #[should_panic(expected = "ESRCH: No such process")]
     fn test_pid_not_exist() {
         let pid = 99999999;
-        let listener = SignalListener::new(pid, Signal::SIGHUP);
+        let listener = SignalListener::new(pid, Signal::SIGHUP, 1000);
         listener.listen().unwrap();
     }
 }

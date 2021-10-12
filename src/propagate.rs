@@ -9,14 +9,14 @@ use nix::unistd::Pid;
 
 
 
-pub fn propagate_signal_to_all_child_pids(pid: u32, depth: u8, signal_map: SignalMap) -> Result<()> {
+pub fn propagate_signal_to_all_child_pids(pid: u32, depth: u8, signal_map: SignalMap, wait_for_process_time: u64) -> Result<()> {
     let target_pids = get_target_pids(pid, depth)?;
 
     let mut join_handles: Vec<std::thread::JoinHandle<_>> = vec![];
     
     for pid in target_pids.into_iter() {
         let handle = std::thread::spawn(move || {
-            propagate_signal(pid.clone(), signal_map)
+            propagate_signal(pid.clone(), signal_map, wait_for_process_time)
         });
         join_handles.push(handle);
     }
@@ -26,8 +26,8 @@ pub fn propagate_signal_to_all_child_pids(pid: u32, depth: u8, signal_map: Signa
     Ok(())
 }
 
-fn propagate_signal(pid: u32, signal_map: SignalMap) -> Result<()> {
-    let listener = SignalListener::new(pid, signal_map.listen_signal);
+fn propagate_signal(pid: u32, signal_map: SignalMap, wait_for_process_time: u64) -> Result<()> {
+    let listener = SignalListener::new(pid, signal_map.listen_signal, wait_for_process_time);
     listener.listen()?;
 
     let child_pids = get_child_pids_full_tree(pid, None, None)?;

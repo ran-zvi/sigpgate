@@ -20,6 +20,9 @@ pub struct Opts {
     #[clap(short, long)]
     pub send_signal: Option<Signal>,
 
+    #[clap(short, long, default_value = "1000")]
+    pub wait_for_process_time: u64,
+
     #[clap(short, long, default_value = "0")]
     pub depth: u8,
 

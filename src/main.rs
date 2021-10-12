@@ -28,7 +28,7 @@ fn main() -> Result<()> {
     let signal_map = SignalMap::new(opts.listen_signal, opts.send_signal);
     if opts.keep_alive {
         loop {
-            match propagate_signal_to_all_child_pids(pid, opts.depth, signal_map) {
+            match propagate_signal_to_all_child_pids(pid, opts.depth, signal_map, opts.wait_for_process_time) {
                 Ok(_) => (),
                 Err(_) => {
                     if opts.verbose {
@@ -42,7 +42,7 @@ fn main() -> Result<()> {
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
     } else {
-        propagate_signal_to_all_child_pids(pid, opts.depth, signal_map)
+        propagate_signal_to_all_child_pids(pid, opts.depth, signal_map, opts.wait_for_process_time)
     }
 }
 
