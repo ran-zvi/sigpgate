@@ -2,6 +2,7 @@ use crate::process::{get_child_pids_at_depth, get_child_pids_full_tree};
 use crate::listener::SignalListener;
 use crate::types::{Result, ChildPids, SignalMap};
 use crate::traits::Listen;
+use crate::errors::ProcessError;
 
 
 use nix::sys::signal::kill;
@@ -51,10 +52,9 @@ fn get_target_pids(pid: u32, depth: u8) -> Result<ChildPids> {
         return Ok(vec![pid]);
     }
 
-    loop {
-        match get_child_pids_at_depth(pid, depth) {
-            Ok(Some(children)) if children.len() > 0 => return Ok(children),
-            _ => continue
-        }
+    match get_child_pids_at_depth(pid, depth) {
+        Ok(Some(children)) if children.len() > 0 => Ok(children),
+        Ok(_) => Err(ProcessError::NoChildPids.into()),
+        Err(e) => Err(e)
     }
 }

@@ -6,10 +6,12 @@ mod propagate;
 mod traits;
 mod types;
 
+use nix::unistd::Pid;
 use crate::cli::Opts;
 use crate::errors::ProcessError;
 use crate::propagate::propagate_signal_to_all_child_pids;
 use crate::types::{Result, SignalMap};
+use crate::listener::wait_until_process_starts;
 
 use clap::Clap;
 use std::process::Command;
@@ -28,6 +30,9 @@ fn main() -> Result<()> {
     let signal_map = SignalMap::new(opts.listen_signal, opts.send_signal);
     if opts.keep_alive {
         loop {
+            if let Err(_) = wait_until_process_starts(Pid::from_raw(pid as i32), opts.wait_for_process_time) {
+                break;
+            }
             match propagate_signal_to_all_child_pids(pid, opts.depth, signal_map, opts.wait_for_process_time) {
                 Ok(_) => (),
                 Err(_) => {
@@ -42,8 +47,10 @@ fn main() -> Result<()> {
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
     } else {
-        propagate_signal_to_all_child_pids(pid, opts.depth, signal_map, opts.wait_for_process_time)
+        propagate_signal_to_all_child_pids(pid, opts.depth, signal_map, opts.wait_for_process_time)?;
     }
+
+    Ok(())
 }
 
 fn spawn_child(command: String) -> Result<u32> {

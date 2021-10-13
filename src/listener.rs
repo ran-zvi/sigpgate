@@ -35,18 +35,20 @@ impl SignalListener {
         Ok(())
     }
 
-    fn wait_until_process_starts(&self) -> Result<()> {
-        let mut time_elapsed = 0;
-        loop {
-            match kill(self.pid, None) {
-                Ok(_) => return Ok(()),
-                Err(e) => {
-                    time_elapsed += WAIT_INTERVAL_MS;
-                    if time_elapsed >= self.max_wait_time {
-                        return Err(e.into());
-                    }
-                    std::thread::sleep(std::time::Duration::from_millis(WAIT_INTERVAL_MS));
+    
+}
+
+pub fn wait_until_process_starts(pid: Pid, max_wait_time: u64) -> Result<()> {
+    let mut time_elapsed = 0;
+    loop {
+        match kill(pid, None) {
+            Ok(_) => return Ok(()),
+            Err(e) => {
+                time_elapsed += WAIT_INTERVAL_MS;
+                if time_elapsed >= max_wait_time {
+                    return Err(e.into());
                 }
+                std::thread::sleep(std::time::Duration::from_millis(WAIT_INTERVAL_MS));
             }
         }
     }
@@ -55,7 +57,7 @@ impl SignalListener {
 impl Listen for SignalListener {
     fn listen(&self) -> Result<ListenStatus> {
         println!("Listening for signal: {} on pid: {}", self.signal, self.pid);
-        self.wait_until_process_starts()?;
+        wait_until_process_starts(self.pid, self.max_wait_time)?;
         self.attach_to_process()?;
 
         loop {
@@ -83,6 +85,7 @@ fn parse_status(status: WaitStatus) -> Option<Signal> {
         _ => None,
     }
 }
+
 
 #[cfg(test)]
 mod tests {
